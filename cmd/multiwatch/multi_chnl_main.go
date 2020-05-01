@@ -14,7 +14,7 @@ type Entry struct {
 }
 
 func main() {
-	mw := multiwatch.NewMultiWatcher(make(chan (<-chan interface{})))
+	mw := multiwatch.NewMultiWatcher()
 	mw.Watch()
 
 	ch1 := make(chan interface{})

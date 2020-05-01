@@ -11,10 +11,10 @@ type MultiWatcher struct {
 	cancel    func()
 }
 
-func NewMultiWatcher(input chan (<-chan interface{})) *MultiWatcher {
+func NewMultiWatcher() *MultiWatcher {
 	ctx, cfunc := context.WithCancel(context.Background())
 	return &MultiWatcher{
-		input:     input,
+		input:     make(chan (<-chan interface{})),
 		resultant: make(chan interface{}),
 		ctx:       ctx,
 		cancel:    cfunc,
@@ -38,26 +38,24 @@ func (mw *MultiWatcher) Stop() {
 }
 
 func (mw *MultiWatcher) Watch() {
-	var otherChan <-chan interface{}
-
 	go func() {
-		var chanPtr <-chan interface{} = otherChan
+		var dataChan <-chan interface{}
 		for {
 			select {
-			case data, ok := <-chanPtr:
+			case data, ok := <-dataChan:
 				if ok {
 					mw.resultant <- data
 				} else {
-					chanPtr = nil
+					dataChan = nil
 				}
 			case chnl := <-mw.input:
-				if chanPtr == nil {
-					chanPtr = chnl
+				if dataChan == nil {
+					dataChan = chnl
 				} else {
 					newChan := make(chan interface{})
 					var newReadChan <-chan interface{} = newChan
-					oldChan := chanPtr
-					chanPtr = newReadChan
+					oldChan := dataChan
+					dataChan = newReadChan
 
 					go func(ctx context.Context) {
 						for {
