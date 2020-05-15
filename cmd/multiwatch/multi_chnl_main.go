@@ -18,20 +18,21 @@ func main() {
 	mw.Watch()
 
 	ch1 := make(chan interface{})
-	mw.QueueChannel(ch1)
+	mw.EnqueueWatcher(ch1)
 
 	ch2 := make(chan interface{})
-	mw.QueueChannel(ch2)
+	mw.EnqueueWatcher(ch2)
 
 	ch3 := make(chan interface{})
-	mw.QueueChannel(ch3)
+	mw.EnqueueWatcher(ch3)
 
 	ch4 := make(chan interface{})
-	mw.QueueChannel(ch4)
+	mw.EnqueueWatcher(ch4)
 
 	ch5 := make(chan interface{})
-	mw.QueueChannel(ch5)
+	mw.EnqueueWatcher(ch5)
 
+	// Concurrent updates on input channels
 	go func() {
 		time.Sleep(10 * time.Millisecond)
 		ch1 <- Entry{
@@ -42,13 +43,13 @@ func main() {
 		time.Sleep(1 * time.Second)
 		ch1 <- Entry{
 			id:   1,
-			data: "HelloHello",
+			data: "Hello Hello",
 		}
 
 		time.Sleep(1 * time.Second)
 		ch1 <- Entry{
 			id:   1,
-			data: "HelloHelloHello",
+			data: "Hello Hello Hello",
 		}
 		close(ch1)
 		log.Println("Goroutine1 exiting")
@@ -64,13 +65,13 @@ func main() {
 		time.Sleep(1 * time.Second)
 		ch2 <- Entry{
 			id:   2,
-			data: "HiHi",
+			data: "Hi Hi",
 		}
 
 		time.Sleep(1 * time.Second)
 		ch2 <- Entry{
 			id:   2,
-			data: "HiHiHi",
+			data: "Hi Hi Hi",
 		}
 		close(ch2)
 		log.Println("Goroutine2 exiting")
@@ -86,13 +87,13 @@ func main() {
 		time.Sleep(1 * time.Second)
 		ch3 <- Entry{
 			id:   3,
-			data: "HolaHola",
+			data: "Hola Hola",
 		}
 
 		time.Sleep(1 * time.Second)
 		ch3 <- Entry{
 			id:   3,
-			data: "HolaHolaHola",
+			data: "Hola Hola Hola",
 		}
 		close(ch3)
 		log.Println("Goroutine3 exiting")
@@ -108,13 +109,13 @@ func main() {
 		time.Sleep(1 * time.Second)
 		ch4 <- Entry{
 			id:   4,
-			data: "ServusServus",
+			data: "Servus Servus",
 		}
 
 		time.Sleep(1 * time.Second)
 		ch4 <- Entry{
 			id:   4,
-			data: "ServusServusServus",
+			data: "Servus Servus Servus",
 		}
 		close(ch4)
 		log.Println("Goroutine4 exiting")
@@ -130,22 +131,23 @@ func main() {
 		time.Sleep(1 * time.Second)
 		ch5 <- Entry{
 			id:   5,
-			data: "BonjourBonjour",
+			data: "Bonjour Bonjour",
 		}
 
 		time.Sleep(1 * time.Second)
 		ch5 <- Entry{
 			id:   5,
-			data: "BonjourBonjourBonjour",
+			data: "Bonjour Bonjour Bonjour",
 		}
 		close(ch5)
 		log.Println("Goroutine5 exiting")
 	}()
 
+	// Read from the multiwatcher
 	done := false
 	for !done {
 		select {
-		case data, ok := <-mw.FetchNext():
+		case data, ok := <-mw.Channel():
 			if ok {
 				fmt.Printf("Got: %v\n", data)
 			} else {

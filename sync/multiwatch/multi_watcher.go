@@ -21,11 +21,11 @@ func NewMultiWatcher() *MultiWatcher {
 	}
 }
 
-func (mw *MultiWatcher) FetchNext() <-chan interface{} {
+func (mw *MultiWatcher) Channel() <-chan interface{} {
 	return mw.resultant
 }
 
-func (mw *MultiWatcher) QueueChannel(chnl <-chan interface{}) {
+func (mw *MultiWatcher) EnqueueWatcher(chnl <-chan interface{}) {
 	mw.input <- chnl
 }
 
@@ -39,35 +39,34 @@ func (mw *MultiWatcher) Stop() {
 
 func (mw *MultiWatcher) Watch() {
 	go func() {
-		var dataChan <-chan interface{}
+		var rootChan <-chan interface{}
 		for {
 			select {
-			case data, ok := <-dataChan:
+			case data, ok := <-rootChan:
 				if ok {
 					mw.resultant <- data
 				} else {
-					dataChan = nil
+					rootChan = nil
 				}
 			case chnl := <-mw.input:
-				if dataChan == nil {
-					dataChan = chnl
+				if rootChan == nil {
+					rootChan = chnl
 				} else {
 					newChan := make(chan interface{})
-					var newReadChan <-chan interface{} = newChan
-					oldChan := dataChan
-					dataChan = newReadChan
+					oldChan := rootChan
+					rootChan = newChan
 
 					go func(ctx context.Context) {
 						for {
 							select {
-							case d1, ok1 := <-oldChan:
-								if ok1 {
+							case d1, ok := <-oldChan:
+								if ok {
 									newChan <- d1
 								} else {
 									oldChan = nil
 								}
-							case d2, ok2 := <-chnl:
-								if ok2 {
+							case d2, ok := <-chnl:
+								if ok {
 									newChan <- d2
 								} else {
 									chnl = nil
